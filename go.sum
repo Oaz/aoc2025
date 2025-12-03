@@ -1,3 +1,5 @@
+github.com/alvii147/gloop v1.1.0 h1:0AxStfKlew2dGPNz20TQ25dStsUxk+XRvqIg6fdOdD4=
+github.com/alvii147/gloop v1.1.0/go.mod h1:KE60QSuIEmLV76rAd3eZ3XJxHS9V++NdHvRNvIF/934=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=

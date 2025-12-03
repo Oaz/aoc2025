@@ -1,9 +1,11 @@
 package day03
 
 import (
-	"sort"
+	"iter"
 	"strconv"
 	"strings"
+
+	"github.com/alvii147/gloop"
 )
 
 type Battery struct {
@@ -11,6 +13,21 @@ type Battery struct {
 	Value int
 }
 type Bank []Battery
+
+func isBeforeInJoltageOrder(a, b Battery) bool {
+	if a.Value == b.Value {
+		return a.Index < b.Index
+	}
+	return a.Value > b.Value
+}
+
+func hasIndexGreaterThan(n int) gloop.FilterFunc[Battery] {
+	return func(battery Battery) bool { return battery.Index > n }
+}
+
+func hasIndexDifferentThan(n int) gloop.FilterFunc[Battery] {
+	return func(battery Battery) bool { return battery.Index != n }
+}
 
 func InputToBanks(input string) []Bank {
 	banks := make([]Bank, 0)
@@ -25,45 +42,36 @@ func InputToBanks(input string) []Bank {
 	return banks
 }
 
-func (bank Bank) Joltage(numberOfBatteriesToTurnOn int) int {
-	available := make([]Battery, len(bank))
-	copy(available, bank)
-	reserve := make([]Battery, 0)
-	result := 0
-	for numberOfBatteriesToTurnOn > 0 {
-		sort.Slice(available, func(i, j int) bool {
-			if available[i].Value == available[j].Value {
-				return available[i].Index < available[j].Index
-			}
-			return available[i].Value > available[j].Value
-		})
-		maxValue := available[0]
-		if maxValue.Index < len(bank)-numberOfBatteriesToTurnOn+1 {
-			result = result*10 + maxValue.Value
-			numberOfBatteriesToTurnOn--
-			remainOnRightOfTurnedOn := make([]Battery, 0)
-			for _, battery := range available[1:] {
-				if battery.Index > maxValue.Index {
-					remainOnRightOfTurnedOn = append(remainOnRightOfTurnedOn, battery)
+func (bank Bank) Digits(numberOfBatteriesToTurnOn int) iter.Seq[int] {
+	return func(yield func(int) bool) {
+		available := gloop.Slice(bank)
+		reserve := gloop.Collect[Battery]()
+		for numberOfBatteriesToTurnOn > 0 {
+			maxIndex := len(bank) - numberOfBatteriesToTurnOn + 1
+			maxValue := gloop.MinByComparison(available, isBeforeInJoltageOrder)
+			if maxValue.Index < maxIndex {
+				if !yield(maxValue.Value) {
+					return
 				}
+				numberOfBatteriesToTurnOn--
+				available = gloop.Chain(gloop.Filter(available, hasIndexGreaterThan(maxValue.Index)), reserve)
+				reserve = gloop.Collect[Battery]()
+			} else {
+				available = gloop.Filter(available, hasIndexDifferentThan(maxValue.Index))
+				reserve = gloop.Chain(reserve, gloop.Collect(maxValue))
 			}
-			for _, battery := range reserve {
-				remainOnRightOfTurnedOn = append(remainOnRightOfTurnedOn, battery)
-			}
-			available = remainOnRightOfTurnedOn
-			reserve = make([]Battery, 0)
-		} else {
-			reserve = append(reserve, maxValue)
-			available = available[1:]
 		}
 	}
-	return result
+}
+
+func (bank Bank) Joltage(numberOfBatteriesToTurnOn int) int {
+	return gloop.Fold(bank.Digits(numberOfBatteriesToTurnOn), func(result, digit int) int {
+		return result*10 + digit
+	})
 }
 
 func TotalOutputJoltage(banks []Bank, n int) int {
-	total := 0
-	for _, bank := range banks {
-		total += bank.Joltage(n)
-	}
-	return total
+	return gloop.Sum(gloop.Transform(gloop.Slice(banks), func(bank Bank) int {
+		return bank.Joltage(n)
+	}))
 }
